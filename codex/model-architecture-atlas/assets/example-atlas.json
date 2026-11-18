@@ -1,0 +1,459 @@
+{
+  "model": "模板演示 MLP",
+  "title": "从输入，到可解释的数据流。",
+  "subtitle": "可运行的样式与维度示例；不是新模型研究结果。",
+  "baseline": "教学模板，无对应论文；未训练网络。两种尺寸由本例显式定义。",
+  "paper_url": "",
+  "repo_url": "",
+  "dimension_legend": "B=batch；[B,D] 表示每个样本D维向量；标量 loss 无 batch 轴。",
+  "groups": [
+    {
+      "id": "input",
+      "label": "输入",
+      "color": "#2563eb"
+    },
+    {
+      "id": "backbone",
+      "label": "骨干",
+      "color": "#7652be"
+    },
+    {
+      "id": "output",
+      "label": "输出",
+      "color": "#087f8c"
+    }
+  ],
+  "modes": [
+    {
+      "id": "small",
+      "label": "窄配置 · D8/H16"
+    },
+    {
+      "id": "wide",
+      "label": "宽配置 · D16/H32"
+    }
+  ],
+  "default_mode": "small",
+  "nodes": [
+    {
+      "id": "input",
+      "title": "向量输入",
+      "group": "input",
+      "overview": [
+        "x [B,8]；训练标签 [B]",
+        "float x [B,8]"
+      ],
+      "summary": "教学示例输入，B为样本数。",
+      "diagram": {
+        "title": "输入整理",
+        "caption": "仅用于验证模板与形状传播，不代表待学习论文模型；箭头按计算依赖连接。",
+        "boxes": [
+          [
+            "0",
+            0,
+            0,
+            "数据类型",
+            "input"
+          ]
+        ],
+        "edges": [],
+        "details": {
+          "0": {
+            "input": "x [B,8]",
+            "output": "float x [B,8]",
+            "purpose": "确保输入可参与浮点线性运算",
+            "operators": "astype/float；标签不送入网络特征通路"
+          }
+        },
+        "blocks": []
+      },
+      "ops": [
+        [
+          "数据整理",
+          "转浮点，不将类别标签拼到输入向量。"
+        ]
+      ],
+      "notes": [
+        "教学模板中的尺寸由本例定义，不是研究论文的结果。"
+      ],
+      "refs": [
+        {
+          "label": "PyTorch Linear 定义（仅作模板算子示例）",
+          "url": "https://docs.pytorch.org/docs/stable/generated/torch.nn.Linear.html"
+        }
+      ],
+      "variants": {
+        "wide": {
+          "overview": [
+            "x [B,16]；训练标签 [B]",
+            "float x [B,16]"
+          ],
+          "diagram": {
+            "title": "宽输入整理",
+            "caption": "仅用于验证模板与形状传播，不代表待学习论文模型；箭头按计算依赖连接。",
+            "boxes": [
+              [
+                "0",
+                0,
+                0,
+                "数据类型",
+                "input"
+              ]
+            ],
+            "edges": [],
+            "details": {
+              "0": {
+                "input": "x [B,16]",
+                "output": "float x [B,16]",
+                "purpose": "整理宽配置输入",
+                "operators": "astype/float"
+              }
+            },
+            "blocks": []
+          }
+        }
+      }
+    },
+    {
+      "id": "mlp",
+      "title": "两层 MLP",
+      "group": "backbone",
+      "overview": [
+        "[B,8]",
+        "logits [B,4]"
+      ],
+      "summary": "两层仿射映射，中间使用 ReLU。",
+      "diagram": {
+        "title": "两层 MLP：展开逐步张量变换",
+        "caption": "仅用于验证模板与形状传播，不代表待学习论文模型；箭头按计算依赖连接。",
+        "boxes": [
+          [
+            "0",
+            0,
+            0,
+            "接收输入",
+            "input"
+          ],
+          [
+            "1",
+            1,
+            0,
+            "Linear 1",
+            ""
+          ],
+          [
+            "2",
+            0,
+            1,
+            "ReLU",
+            ""
+          ],
+          [
+            "3",
+            1,
+            1,
+            "Linear 2",
+            "output"
+          ]
+        ],
+        "edges": [
+          [
+            "0",
+            "1"
+          ],
+          [
+            "1",
+            "2"
+          ],
+          [
+            "2",
+            "3"
+          ]
+        ],
+        "details": {
+          "0": {
+            "input": "[B,8]",
+            "output": "[B,8]",
+            "purpose": "读取每个样本的向量特征",
+            "operators": "读取 Tensor；无额外层"
+          },
+          "1": {
+            "input": "[B,8]",
+            "output": "[B,16]",
+            "purpose": "扩展可学习的隐藏通道",
+            "operators": "Linear 8→16；权重 [16,8]；bias [16]"
+          },
+          "2": {
+            "input": "[B,16]",
+            "output": "[B,16]",
+            "purpose": "引入逐元素非线性",
+            "operators": "ReLU：max(0,x)，不混合 batch 或通道"
+          },
+          "3": {
+            "input": "[B,16]",
+            "output": "[B,4]",
+            "purpose": "预测四类未归一化分数",
+            "operators": "Linear 16→4；权重 [4,16]；bias [4]"
+          }
+        },
+        "blocks": [
+          {
+            "title": "展开：Linear 1 的矩阵操作",
+            "caption": "仅用于验证模板与形状传播，不代表待学习论文模型；箭头按计算依赖连接。",
+            "boxes": [
+              [
+                "0",
+                0,
+                0,
+                "仿射映射",
+                "input"
+              ]
+            ],
+            "edges": [],
+            "details": {
+              "0": {
+                "input": "x [B,8]；W [16,8]；b [16]",
+                "output": "y [B,16]",
+                "purpose": "对每个样本独立计算隐藏特征",
+                "operators": "matmul(x,Wᵀ) → broadcast add(b)"
+              }
+            },
+            "blocks": []
+          }
+        ]
+      },
+      "ops": [
+        [
+          "Linear 1",
+          "Linear8→16"
+        ],
+        [
+          "激活",
+          "ReLU"
+        ],
+        [
+          "Linear 2",
+          "Linear16→4"
+        ]
+      ],
+      "notes": [
+        "教学模板中的尺寸由本例定义，不是研究论文的结果。"
+      ],
+      "refs": [
+        {
+          "label": "PyTorch Linear 定义（仅作模板算子示例）",
+          "url": "https://docs.pytorch.org/docs/stable/generated/torch.nn.Linear.html"
+        }
+      ],
+      "variants": {
+        "wide": {
+          "overview": [
+            "[B,16]",
+            "logits [B,4]"
+          ],
+          "diagram": {
+            "title": "两层 MLP：展开逐步张量变换",
+            "caption": "仅用于验证模板与形状传播，不代表待学习论文模型；箭头按计算依赖连接。",
+            "boxes": [
+              [
+                "0",
+                0,
+                0,
+                "接收输入",
+                "input"
+              ],
+              [
+                "1",
+                1,
+                0,
+                "Linear 1",
+                ""
+              ],
+              [
+                "2",
+                0,
+                1,
+                "ReLU",
+                ""
+              ],
+              [
+                "3",
+                1,
+                1,
+                "Linear 2",
+                "output"
+              ]
+            ],
+            "edges": [
+              [
+                "0",
+                "1"
+              ],
+              [
+                "1",
+                "2"
+              ],
+              [
+                "2",
+                "3"
+              ]
+            ],
+            "details": {
+              "0": {
+                "input": "[B,16]",
+                "output": "[B,16]",
+                "purpose": "读取每个样本的向量特征",
+                "operators": "读取 Tensor；无额外层"
+              },
+              "1": {
+                "input": "[B,16]",
+                "output": "[B,32]",
+                "purpose": "扩展可学习的隐藏通道",
+                "operators": "Linear 16→32；权重 [32,16]；bias [32]"
+              },
+              "2": {
+                "input": "[B,32]",
+                "output": "[B,32]",
+                "purpose": "引入逐元素非线性",
+                "operators": "ReLU：max(0,x)，不混合 batch 或通道"
+              },
+              "3": {
+                "input": "[B,32]",
+                "output": "[B,4]",
+                "purpose": "预测四类未归一化分数",
+                "operators": "Linear 32→4；权重 [4,32]；bias [4]"
+              }
+            },
+            "blocks": [
+              {
+                "title": "展开：Linear 1 的矩阵操作",
+                "caption": "仅用于验证模板与形状传播，不代表待学习论文模型；箭头按计算依赖连接。",
+                "boxes": [
+                  [
+                    "0",
+                    0,
+                    0,
+                    "仿射映射",
+                    "input"
+                  ]
+                ],
+                "edges": [],
+                "details": {
+                  "0": {
+                    "input": "x [B,16]；W [32,16]；b [32]",
+                    "output": "y [B,32]",
+                    "purpose": "对每个样本独立计算隐藏特征",
+                    "operators": "matmul(x,Wᵀ) → broadcast add(b)"
+                  }
+                },
+                "blocks": []
+              }
+            ]
+          },
+          "ops": [
+            [
+              "Linear 1",
+              "Linear16→32"
+            ],
+            [
+              "激活",
+              "ReLU"
+            ],
+            [
+              "Linear 2",
+              "Linear32→4"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "output",
+      "title": "分类输出",
+      "group": "output",
+      "overview": [
+        "logits [B,4]；训练另需 labels [B]",
+        "推理概率 [B,4] / 类别 [B]；训练标量 loss"
+      ],
+      "summary": "训练直接向交叉熵传 logits；推理才转概率。",
+      "diagram": {
+        "title": "推理输出与训练监督分开",
+        "caption": "仅用于验证模板与形状传播，不代表待学习论文模型；箭头按计算依赖连接。",
+        "boxes": [
+          [
+            "0",
+            0,
+            0,
+            "Logits",
+            "input"
+          ],
+          [
+            "1",
+            1,
+            0,
+            "推理",
+            "output"
+          ]
+        ],
+        "edges": [
+          [
+            "0",
+            "1"
+          ]
+        ],
+        "details": {
+          "0": {
+            "input": "[B,4]",
+            "output": "[B,4]",
+            "purpose": "接收未激活的分类分数",
+            "operators": "读取 MLP 输出"
+          },
+          "1": {
+            "input": "logits [B,4]",
+            "output": "probabilities [B,4]；labels [B]",
+            "purpose": "生成预测类别与概率",
+            "operators": "softmax(dim=-1) → argmax(dim=-1)"
+          }
+        },
+        "blocks": []
+      },
+      "ops": [
+        [
+          "训练",
+          "CrossEntropyLoss(logits [B,4],labels [B]) → 标量"
+        ],
+        [
+          "推理",
+          "softmax → argmax"
+        ]
+      ],
+      "notes": [
+        "教学模板中的尺寸由本例定义，不是研究论文的结果。"
+      ],
+      "refs": [
+        {
+          "label": "PyTorch Linear 定义（仅作模板算子示例）",
+          "url": "https://docs.pytorch.org/docs/stable/generated/torch.nn.Linear.html"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    [
+      "input",
+      "mlp"
+    ],
+    [
+      "mlp",
+      "output"
+    ]
+  ],
+  "sections": {
+    "io": "<div class=\"panel\"><h2>输入输出</h2><div class=\"table-wrap\"><table><tr><th>角色</th><th>形状</th><th>含义</th></tr><tr><td>输入 x</td><td>[B,8] 或 [B,16]</td><td>浮点向量</td></tr><tr><td>训练 labels</td><td>[B]</td><td>0–3整型类别</td></tr><tr><td>推理</td><td>概率 [B,4]；类别 [B]</td><td>softmax 后的四类概率</td></tr><tr><td>训练</td><td>标量 loss</td><td>由 logits 与标签计算交叉熵</td></tr></table></div></div>",
+    "config": "<div class=\"panel\"><h3>配置</h3><p>窄配置 D=8、H=16；宽配置 D=16、H=32。类别数均为4。尺寸仅用于演示，真实任务需要按源码与配置重写。</p></div>",
+    "mechanics": "<div class=\"panel\"><h2>ReLU 机制演示</h2><p>这只是一个标量，真实网络会对 [B,H] 中每个元素独立计算。</p><label for=\"demo-x\">输入 x</label><input id=\"demo-x\" type=\"range\" min=\"-3\" max=\"3\" step=\"0.1\" value=\"1\"><p id=\"demo-output\" aria-live=\"polite\"></p></div>",
+    "training": "<div class=\"panel\"><h2>训练与推理</h2><p>训练将原始 logits 和整数标签交给交叉熵；不要先 softmax 再当作 logits。推理才 softmax、argmax。本示例未执行训练，也无性能数值。</p></div>",
+    "innovation": "<div class=\"panel\"><h2>创新与问题</h2><p>本例没有论文贡献，不应捏造创新、实验结果或最新解决方案。</p><details><summary>输入维度受固定 Linear 权重限制</summary><p>依据：Linear 权重的第二轴必须匹配输入特征维。工程上更换维度时需建立相应权重/配置并重新训练或迁移；不能只改页面显示的形状。此项是算子约束演示，非研究贡献。</p></details></div>",
+    "sources": "<div class=\"panel\"><h2>论文对照与来源</h2><p>无论文；示例只演示模板。正式学习页须替换为论文版本、仓库commit、配置、源码行号以及差异说明。</p></div>"
+  }
+}
